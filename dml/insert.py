@@ -7,6 +7,7 @@ import parsinghelpers as ph
 import find
 from models import species, population, line, chromosome, variant, genotype, trait, phenotype, growout_type, growout, location, gwas_algorithm, genotype_version, imputation_method, kinship_algorithm, kinship, population_structure_algorithm, population_structure, gwas_run, gwas_result
 import psycopg2 as pg
+from tqdm import tqdm
 
 
 def insert_species(conn, species):
@@ -167,7 +168,7 @@ def insert_lines_from_file(conn, lineFile, populationID):
   """
   linelist = ph.parse_lines_from_file(lineFile)
   insertedLineIDs = []
-  for linename in linelist:
+  for linename in tqdm(linelist):
     lineobj = line(linename, populationID)
     insertedLineID = insert_line(conn, lineobj)
     insertedLineIDs.append(insertedLineID)
@@ -228,7 +229,7 @@ def insert_variants_from_file(conn, variantPosFile, speciesID, chromosomeID):
   insertedVariantIDs = []
   variant_process_counter = 0
   time_counter = time.time()
-  for variantpos in variantlist:
+  for variantpos in tqdm(variantlist):
     variantobj = variant(speciesID, chromosomeID, variantpos)
     print("vObj:\t" + str(variantobj))
     insertedVariantID = insert_variant(conn, variantobj)
@@ -292,7 +293,7 @@ def insert_genotypes_from_file(conn, genotypeFile, lineFile, chromosomeID, popul
   insertedGenotypeIDs = []
   counter = 0
   cutoff = len(ziplist) / 10
-  for zippedpair in ziplist:
+  for zippedpair in tqdm(ziplist):
     genotypeObj = genotype(zippedpair[0], chromosomeID, zippedpair[1], genotype_versionID)
     insertedGenotypeID = insert_genotype(conn, genotypeObj)
     insertedGenotypeIDs.append(insertedGenotypeID)
@@ -415,7 +416,7 @@ def insert_phenotypes_from_file(conn, phenotypeFile, populationID):
     print("***********KEY**************:")
     print(key)
     traitID = find.find_trait(conn, key)
-    for index, traitval in value.iteritems():
+    for index, traitval in tqdm(value.iteritems()):
       lineID = find.find_line(conn, index, maize282popID)
       if lineID is None:
         newline = line(index, maize282popID)
@@ -837,7 +838,7 @@ def insert_gwas_results_from_file(conn, speciesID, gwas_results_file, gwas_algor
   """
   new_gwas_result_IDs = []
   df = pd.read_csv(gwas_results_file)
-  for index, row in df.iterrows():
+  for index, row in tqdm(df.iterrows()):
     trait = row['trait']
     traitID = find.find_trait(conn, trait)
     gwas_run_ID = find.find_gwas_run(conn, gwas_algorithm_ID, missing_snp_cutoff_value, missing_line_cutoff_value, imputationMethodID, traitID, row['nSNPs'], row['nLines'], genotypeVersionID, kinshipID, populationStructureID, minor_allele_frequency_cutoff_value)

@@ -1,5 +1,6 @@
 \connect postgres
 
+SET client_min_messages TO WARNING;
 DROP DATABASE IF EXISTS baxdb;
 DROP ROLE IF EXISTS baxdb_owner;
 
@@ -12,10 +13,3 @@ CREATE DATABASE baxdb
     WITH OWNER = baxdb_owner
     ENCODING = 'UTF-8'
     ;
-
---\connect baxdb
-
---CREATE OR REPLACE FUNCTION array_multi_index( ANYARRAY, INTEGER[] )
---    RETURNS ANYARRAY
---    AS '$libdir/baxdb/array_multi_index'
---    LANGUAGE C IMMUTABLE STRICT;
