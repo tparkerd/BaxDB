@@ -2,6 +2,39 @@
 Extras
 ######
 
+*********
+R Package
+*********
+
+Although the database can be directly accessed via your preferred client, it can
+be access via R directly using a small R package knowns as `gwasdbconnector` after
+its GitHub repo name. The package can be downloaded directly from GitHub at 
+https://github.com/tparkerd/gwasdbconnector.git
+
+
+Preparation
+===========
+
+OS Dependencies:
+
+.. code-block:: bash
+
+  # libpq-dev (psql)
+  sudo apt-get install libpq-dev  
+
+R Dependencies:
+
+https://cran.r-project.org/web/packages/RPostgreSQL/index.html
+
+
+.. code-block:: r
+
+  # PostgreSQL 
+  install.packages('RPostgres')
+
+Enable library
+
+
 ***************
 Web Application
 ***************
