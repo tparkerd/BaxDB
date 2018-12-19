@@ -17,9 +17,9 @@ Types of Datasets
 
   :abbr:`NAM(Nested Association Mapping)`
 
-  :abbr:`BAP(6-Benzylaminopurine)`
+  :abbr:`BAP(????)`
 
-  :abbr:`SAP(?????????)`
+  :abbr:`SAP(Sorghum Association Panel)`
 
 
 ==========
