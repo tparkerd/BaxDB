@@ -13,6 +13,11 @@
 import fileinput
 import argparse
 import shutil # added for shutil.rmtree for deleting directory
+import datetime
+from pprint import pprint # for debugging purposes
+# import pandas as pd # constructing data
+
+
 
 class AutoRepr(object):
   def __repr__(self):
@@ -20,7 +25,9 @@ class AutoRepr(object):
     return "<%s: {%s}>" % (self.__class__.__name__, ', '.join(items))
 
 class datapoint(AutoRepr):
-  def __init__(self, location, year, trait, line, value = None):
+  def __init__(self, index, filename, location, year, trait, line, value):
+    self.index = index
+    self.filename = filename
     self.location = location
     self.year = year
     self.trait = trait
@@ -28,24 +35,158 @@ class datapoint(AutoRepr):
     self.value = value
   pass
 
+def is_location_year(trait):
+  # If it's not four characters, it's not a location-year pair
+  if len(trait) != 4:
+    return False
+
+  # If the last two characters are not integers, it's not a location-year pair
+  if trait[-2:].isdigit() == False:
+    return False
+
+  # If the first two characters are not letters, it's not a location-year pair
+  if trait[0:1].isalpha() == False:
+    return False
+
+  return True
+
+def get_location_year(trait):
+  # Get the location and year from the last four characters
+  location_code = trait[-4:-2]
+  # When the last two digits of a year are larger than the current year,
+  # then assume that the experiment was done in the 1900s
+  year = None
+  dd = datetime.datetime.strptime(trait[-2:],'%y').year
+  if dd > datetime.datetime.now().year:
+    year = dd.replace(year = dd - 100)
+  else:
+    year = dd
+
+  if year is None:
+    raise Exception("Unable to convert `" + str(trait) +
+                    "` to location-year pair. <location_code: " + location_code
+                    + ", year: " + str(year) + ">")
+
+  return (location_code, year)
+
+def trait_to_identifier(trait):
+  trait_id = trait.split('_')[-1]
+
+  # Check if the trait id is a location-year pair or otherwise
+  # Set it's filename according to which identifier is used
+  if is_location_year(trait_id):
+    location, year = get_location_year(trait)
+    trait_id = '_'.join([location, str(year)]).strip()
+  else:
+    trait_id = trait_id.strip()
+
+  return trait_id
+
+def trait_to_column(trait):
+  result = '_'.join(trait.split('_')[:-1])
+  if result == '': # in case of row label (left-most column label)
+    return trait
+  return result
+
 def process(files):
   try:
+    identifiers = {} # list of unique identifiers to name files
+    column_names = [] # look up raw trait name given an index
     # For each file...
     # For each line...
     fp = fileinput.input(files)
+    # STEP 1: Read through all of the files and data to allocate space
     for line in fp:
-      # If it's the header of the file, create a data matrix
-      print(fp.filelineno())
-      # if (fp.filelineno() == 1):
-      # Skip comments and blank lines
+      # CASE: Header
+      if (fp.filelineno() == 1):
+        # Split the header into a list of values
+        raw_trait_list = line.split(',')
+        for index, trait in enumerate(raw_trait_list):
+          column_names.append(trait.strip())
+          # Add identifier as a unique filename
+          tid = trait_to_identifier(trait)
+          row_label = line.split(',')[0]
+          if tid not in identifiers and tid != row_label:
+            identifiers[tid] = {}
+            identifiers[tid]['filename'] = '.'.join([tid, 'csv'])
+            identifiers[tid]['header'] = [line.split(',')[0]] # Assume row label
+            identifiers[tid]['data'] = None
+
+        continue
+        
+      # CASE: Comment or blank line (skip)
       if line[0] == '#' or line[0] == '\n':
         continue
+
+      # CASE: Normal row
+      # We've reached a normal row that contains a line and all its values for
+      # each trait
       try:
-        pass
-        print(line)
-        # (key, val) = line.rstrip().split(',')
+        line_values = line.split(",") # Omit line name
+        for col, value in enumerate(line_values):
+          value = value.strip() # Final value always has a trailing newline
+          # NOTE(timp): Consider adding an optional argument to select between
+          #             generating a sparse/dense matrix. By default, dense.
+          # if args.sparse == True: ...
+          if value == 'NA': # skip empty values
+            continue
+          else:
+            row_label = line_values[0]
+            value = value
+            column_index = col
+            column_name = trait_to_column(column_names[col])
+            identity = trait_to_identifier(column_names[col])
+            
+            pprint((column_index, column_name, identity, row_label, value))
+            # Ignore any identifiers that were not previously created
+            if identity in identifiers:
+              # If new trait is not in the file's header, append it
+              if column_name not in identifiers[identity]['header']:
+                identifiers[identity]['header'].append(column_name)
+                # Increment the number of slots in 
+
+  
+
+            # Check if there is already a header for this column
+            # If not, append it and its associated value
+            # Step 1: Given column name, find it in header
+
       except:
-        pass
+        raise
+
+    # STEP 2: Save data
+    for line in fp:
+      print(line + '============================')
+      # CASE: Header
+      if (fp.filelineno() == 1):
+        continue
+
+      # CASE: Comment or blank line (skip)
+      if line[0] == '#' or line[0] == '\n':
+        continue
+
+      # CASE: Normal row
+      # We've reached a normal row that contains a line and all its values for
+      # each trait
+      try:
+        line_values = line.split(",") # Omit line name
+        for col, value in enumerate(line_values):
+          value = value.strip() # Final value always has a trailing newline
+          if value == 'NA': # skip empty values
+            continue
+          else:
+            row_label = line_values[0]
+            value = value
+            column_index = col
+            column_name = trait_to_column(column_names[col])
+            identity = trait_to_identifier(column_names[col])
+            
+            pprint((column_index, column_name, identity, row_label, value))
+      except:
+        raise
+
+      pprint(identifiers)  
+
 
   except:
     raise 
