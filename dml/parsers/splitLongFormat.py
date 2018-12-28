@@ -15,8 +15,9 @@ import argparse
 import shutil # added for shutil.rmtree for deleting directory
 import datetime
 from pprint import pprint # for debugging purposes
-# import pandas as pd # constructing data
-
+import pandas as pd # constructing data
+import sys
+import os
 
 
 class AutoRepr(object):
@@ -69,7 +70,7 @@ def get_location_year(trait):
 
   return (location_code, year)
 
-def trait_to_identifier(trait):
+def trait_to_filenames(trait):
   trait_id = trait.split('_')[-1]
 
   # Check if the trait id is a location-year pair or otherwise
@@ -82,82 +83,89 @@ def trait_to_identifier(trait):
 
   return trait_id
 
+def trait_to_identifier(trait):
+  trait_id = trait.split('_')[-1]
+
+  # Check if the trait id is a location-year pair or otherwise
+  # Set it's filename according to which identifier is used
+  if is_location_year(trait_id):
+    trait_id = trait_id.strip()
+  else:
+    trait_id = trait_id.strip()
+
+  return trait_id
+
 def trait_to_column(trait):
   result = '_'.join(trait.split('_')[:-1])
   if result == '': # in case of row label (left-most column label)
     return trait
   return result
 
+def process_stdin():
+ return pd.read_csv(sys.stdin)
+
+def process_files(fp):
+
+  # Fill an empty dataframe with all the possible traits and lines
+  df = pd.DataFrame()
+  for line in fp:
+    df = pd.concat([df, pd.read_csv(fp.filename())], axis = 0,
+                    ignore_index = True, sort = False)
+    fp.nextfile()
+  return df
+
+
+
 def process(files):
   try:
-    identifiers = {} # list of unique identifiers to name files
-    column_names = [] # look up raw trait name given an index
-    # For each file...
-    # For each line...
     fp = fileinput.input(files)
-    # STEP 1: Read through all of the files and data to allocate space
-    for line in fp:
-      # CASE: Header
-      if (fp.filelineno() == 1):
-        # Split the header into a list of values
-        raw_trait_list = line.split(',')
-        for index, trait in enumerate(raw_trait_list):
-          column_names.append(trait.strip())
-          local_column_names.append(trait.strip())
-          # Add identifier as a unique filename
-          tid = trait_to_identifier(trait)
-          row_label = line.split(',')[0]
-          if tid not in identifiers and tid != row_label:
-            identifiers[tid] = {}
-            identifiers[tid]['filename'] = '.'.join([tid, 'csv'])
-            identifiers[tid]['header'] = [line.split(',')[0]] # Assume row label
-            identifiers[tid]['data'] = None
+    df = None
+    if len(files) < 1:
+      df = process_stdin()
+    else:
+      df = process_files(fp)
+    pprint(df)
 
-        continue
-        
-      # CASE: Comment or blank line (skip)
-      if line[0] == '#' or line[0] == '\n':
-        continue
+    pprint(list(df))
+    filenames = set()
+    for trait in list(df)[1:]: # Omit row label
+      filename = trait_to_filenames(trait)
+      filenames.add(filename)
+    pprint(filenames)
 
-      # CASE: Normal row
-      # We've reached a normal row that contains a line and all its values for
-      # each trait
-      try:
-        identifiers[]
-        line_values = line.split(",")
-        for col, value in enumerate(line_values):
-          if value == 'NA': # skip missing values
-            continue
-          else:
-            label = line_values[0]
-            value = value.strip()
-            column_index = col
-            column_name = trait_to_column(column_names[col])
-            identity = trait_to_identifier(column_names[col])
-            
-            pprint((column_index, column_name, identity, label, value))
-            # Ignore any identifiers that were not previously created
-            if identity in identifiers:
-              # If new trait is not in the file's header, append it
-              if column_name not in identifiers[identity]['header']:
-                identifiers[identity]['header'].append(column_name)
-              # Save value by line/trait
-              identifiers[label] = {}
-              row_label = identifiers[identity]['header'][0]
-              identifiers[label][row_label] = label
-              
-              # Header should exist now, so we add the line/trait value
 
-  
+    identifiers = set()
+    for trait in list(df)[1:]: # omit row label
+      identity = trait_to_identifier(trait)
+      identifiers.add(identity)
 
-            # Check if there is already a header for this column
-            # If not, append it and its associated value
-            # Step 1: Given column name, find it in header
-
-      except:
-        raise
+    identifiers = list(identifiers)
 
     pprint(identifiers)
+
+    dfs = {}
+    for index, filename in enumerate(filenames):
+      dfs[filename] = {}
+      dfs[filename]['filename'] = '.'.join([filename, 'csv'])
+      
+      print(identifiers[index])
+      cases = [list(df)[0], identifiers[index]]
+      pattern = '|'.join(cases)
+      pattern = '.*' + pattern + '.*'
+      # Only include relevant column, set row label as index, and drop any rows that have all missing values
+      dfs[filename]['data'] = df.filter(regex = pattern).set_index(list(df)[0]).dropna(how = 'all')
+      # Rename columns to omit location-year pairs
+      dfs[filename]['data'].columns = [ trait_to_column(t) for t in dfs[filename]['data'].columns ]
+      
+    # Output the files
+    output_dir = 'output_' + str(datetime.datetime.now())
+    if not os.path.exists(output_dir):
+      os.makedirs(output_dir)
+    for df in dfs.keys():
+      pprint(dfs[df]['data'])
+      dfs[df]['data'].to_csv(os.path.join(output_dir, dfs[df]['filename']))
+
+
   except:
     raise 
 
