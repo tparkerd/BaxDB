@@ -103,6 +103,7 @@ def process(files):
         raw_trait_list = line.split(',')
         for index, trait in enumerate(raw_trait_list):
           column_names.append(trait.strip())
+          local_column_names.append(trait.strip())
           # Add identifier as a unique filename
           tid = trait_to_identifier(trait)
           row_label = line.split(',')[0]
@@ -122,28 +123,30 @@ def process(files):
       # We've reached a normal row that contains a line and all its values for
       # each trait
       try:
-        line_values = line.split(",") # Omit line name
+        identifiers[]
+        line_values = line.split(",")
         for col, value in enumerate(line_values):
-          value = value.strip() # Final value always has a trailing newline
-          # NOTE(timp): Consider adding an optional argument to select between
-          #             generating a sparse/dense matrix. By default, dense.
-          # if args.sparse == True: ...
-          if value == 'NA': # skip empty values
+          if value == 'NA': # skip missing values
             continue
           else:
-            row_label = line_values[0]
-            value = value
+            label = line_values[0]
+            value = value.strip()
             column_index = col
             column_name = trait_to_column(column_names[col])
             identity = trait_to_identifier(column_names[col])
             
-            pprint((column_index, column_name, identity, row_label, value))
+            pprint((column_index, column_name, identity, label, value))
             # Ignore any identifiers that were not previously created
             if identity in identifiers:
               # If new trait is not in the file's header, append it
               if column_name not in identifiers[identity]['header']:
                 identifiers[identity]['header'].append(column_name)
-                # Increment the number of slots in 
+              # Save value by line/trait
+              identifiers[label] = {}
+              row_label = identifiers[identity]['header'][0]
+              identifiers[label][row_label] = label
+              
+              # Header should exist now, so we add the line/trait value
 
   
 
@@ -154,40 +157,7 @@ def process(files):
       except:
         raise
 
-    # STEP 2: Save data
-    for line in fp:
-      print(line + '============================')
-      # CASE: Header
-      if (fp.filelineno() == 1):
-        continue
-
-      # CASE: Comment or blank line (skip)
-      if line[0] == '#' or line[0] == '\n':
-        continue
-
-      # CASE: Normal row
-      # We've reached a normal row that contains a line and all its values for
-      # each trait
-      try:
-        line_values = line.split(",") # Omit line name
-        for col, value in enumerate(line_values):
-          value = value.strip() # Final value always has a trailing newline
-          if value == 'NA': # skip empty values
-            continue
-          else:
-            row_label = line_values[0]
-            value = value
-            column_index = col
-            column_name = trait_to_column(column_names[col])
-            identity = trait_to_identifier(column_names[col])
-            
-            pprint((column_index, column_name, identity, row_label, value))
-      except:
-        raise
-
-      pprint(identifiers)  
-
-
+    pprint(identifiers)
   except:
     raise 
 
