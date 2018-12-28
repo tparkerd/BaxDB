@@ -19,23 +19,6 @@ import pandas as pd # constructing data
 import sys
 import os
 
-
-class AutoRepr(object):
-  def __repr__(self):
-    items = ("%s = %r" % (k, v) for k, v in self.__dict__.items())
-    return "<%s: {%s}>" % (self.__class__.__name__, ', '.join(items))
-
-class datapoint(AutoRepr):
-  def __init__(self, index, filename, location, year, trait, line, value):
-    self.index = index
-    self.filename = filename
-    self.location = location
-    self.year = year
-    self.trait = trait
-    self.line = line
-    self.value = value
-  pass
-
 def is_location_year(trait):
   # If it's not four characters, it's not a location-year pair
   if len(trait) != 4:
@@ -114,9 +97,8 @@ def process_files(fp):
     fp.nextfile()
   return df
 
-
-
-def process(files):
+def process(args):
+  files = args.files
   try:
     fp = fileinput.input(files)
     df = None
@@ -124,34 +106,30 @@ def process(files):
       df = process_stdin()
     else:
       df = process_files(fp)
-    pprint(df)
 
-    pprint(list(df))
+    # Create a set of filenames and identifiers
+    # The filenames are used to access the data stored as dataframes,
+    # and the identifiers are used to filter the appropriate columns
+    # to omit irrelevant data in the output dataframe
     filenames = set()
+    identifiers = set()
     for trait in list(df)[1:]: # Omit row label
       filename = trait_to_filenames(trait)
       filenames.add(filename)
-    pprint(filenames)
-
-
-    identifiers = set()
-    for trait in list(df)[1:]: # omit row label
       identity = trait_to_identifier(trait)
       identifiers.add(identity)
-
-    identifiers = list(identifiers)
-
-    pprint(identifiers)
+    filenames = sorted(list(filenames))
+    identifiers = sorted(list(identifiers))
 
     dfs = {}
     for index, filename in enumerate(filenames):
       dfs[filename] = {}
       dfs[filename]['filename'] = '.'.join([filename, 'csv'])
-      
-      print(identifiers[index])
-      cases = [list(df)[0], identifiers[index]]
-      pattern = '|'.join(cases)
-      pattern = '.*' + pattern + '.*'
+      identity = identifiers[index]
+      # Create a regex pattern that joins the identifier with Boolean ORs
+      # Also, make it so that it can be anywhere in the column name and be
+      # included.
+      pattern = '.*' + '|'.join([list(df)[0], identity]) + '.*'
       # Only include relevant column, set row label as index, and drop any rows that have all missing values
       dfs[filename]['data'] = df.filter(regex = pattern).set_index(list(df)[0]).dropna(how = 'all')
       # Rename columns to omit location-year pairs
@@ -159,12 +137,14 @@ def process(files):
       
     # Output the files
     output_dir = 'output_' + str(datetime.datetime.now())
+    if (args.outdir is not None):
+      output_dir = args.outdir.replace(' ', '\\ ') # naive path escaping
     if not os.path.exists(output_dir):
       os.makedirs(output_dir)
     for df in dfs.keys():
-      pprint(dfs[df]['data'])
-      dfs[df]['data'].to_csv(os.path.join(output_dir, dfs[df]['filename']))
-
+      if (args.verbose):
+        pprint(dfs[df])
+      dfs[df]['data'].to_csv(os.path.join(str(output_dir), dfs[df]['filename']))
 
   except:
     raise 
@@ -175,6 +155,9 @@ if __name__=="__main__":
                       help='files to read, if empty, stdin is used')
   parser.add_argument("-v", "--verbose", action="store_true",
                       help="increase output verbosity")
+  parser.add_argument("-o", "--outdir", default = None,
+                      help="name of output directory")
   args = parser.parse_args()
+  pprint(args)
 
-  process(args.files)
+  process(args)
