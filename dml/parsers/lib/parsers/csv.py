@@ -1,16 +1,13 @@
 """
-Truncated Dataset Parser
+CSV Dataset Parser
 
-Parse the long format of traits by line, where the trait contains location and
-year. It splits a single file into N files, where N is the number of location
-and year combinations.
+This is the original parser that was meant to transform the long format of
+traits by line, where the trait contains location and year. It splits a single
+file into N files, where N is the number of location and year combinations.
 
-Common usage:
-  python splitLongFormat.py -v input_file
-
-Expected ouput:
+Expected input:
   N files, M traits, P lines
-  Line/Pedigree, Trait 1, Trait 2, Trait 3, Trait 4...Trait M
+  Line/Pedigree, Trait 1_LOYR, Trait 2_LOYR, Trait 3_LOYR, ...Trait M_LOYR
   Line 1, 1, 2, 3, 4, 5...M
   Line 2, 1, 2, 3, 4, 5...M
   ...
@@ -19,13 +16,16 @@ Expected ouput:
 """
 
 import fileinput
-from pprint import pprint
-import pandas as pd
-import sys
-import os
 import math
+import os
 import re
-from .. import helpers # custom helper functions for transformation
+import sys
+from pprint import pprint
+
+import pandas as pd
+
+from .. import helpers  # custom helper functions for transformation
+
 
 def read_stdin(fp, delimiter):
   """
@@ -140,18 +140,6 @@ def process(args, delimiter = ','):
       # Rename columns to omit location-year pairs
       dfs[filename]['data'].columns = [ helpers.trait_to_column(t) for t in dfs[filename]['data'].columns ]
       
-    # Output the files
-    try:
-      if not os.path.exists(args.outdir):
-        os.makedirs(args.outdir)
-    except Exception as e:
-      raise
-    for df in dfs.keys():
-      if (args.verbose):
-        pprint(dfs[df])
-      dfs[df]['data'].to_csv(os.path.join(str(args.outdir), dfs[df]['filename']))
-    pprint(f"Created {len(dfs.keys())} files in {args.outdir}")
-
     # Return the resultant dataframes
     return dfs
 
