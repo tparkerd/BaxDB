@@ -1,13 +1,15 @@
 """
-CSV Dataset Parser
+CSV Dataset Transformer A
+v 1.0-alpha
 
-This is the original parser that was meant to transform the long format of
-traits by line, where the trait contains location and year. It splits a single
-file into N files, where N is the number of location and year combinations.
+Transform the long format of traits by line, where the trait contains location and
+year. It splits a single file into N files, where N is the number of location
+and year combinations.
+
 
 Expected input:
   N files, M traits, P lines
-  Line/Pedigree, Trait 1_LOYR, Trait 2_LOYR, Trait 3_LOYR, ...Trait M_LOYR
+  Line/Pedigree, LocationYear 4-tuple,  Trait 1, Trait 2, Trait 3, Trait 4...Trait M
   Line 1, 1, 2, 3, 4, 5...M
   Line 2, 1, 2, 3, 4, 5...M
   ...
@@ -139,7 +141,7 @@ def process(args, delimiter = ','):
       dfs[filename]['data'] = df.filter(regex = pattern).set_index(list(df)[0]).dropna(how = 'all')
       # Rename columns to omit location-year pairs
       dfs[filename]['data'].columns = [ helpers.trait_to_column(t) for t in dfs[filename]['data'].columns ]
-      
+
     # Return the resultant dataframes
     return dfs
 
