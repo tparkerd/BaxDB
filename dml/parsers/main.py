@@ -22,16 +22,12 @@ Background:
               parse files and will be the 'versions' of parsers
 """
 
-import fileinput
 import argparse
 import datetime
-from pprint import pprint
-import pandas as pd
-import sys
-import os
-import math
-import re
 import importlib
+import os
+from pprint import pprint
+
 
 def process(args):
   try:
