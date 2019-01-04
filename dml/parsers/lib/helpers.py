@@ -4,11 +4,18 @@ Helper Functions for data transformation script
 
 import datetime
 # from pprint import pprint
-# import pandas as pd
+import pandas as pd
 # import sys
 # import os
 # import math
 # import re
+
+def location_code_as(code):
+  locations = pd.read_csv('locations.csv', index_col = 0)
+  if code.upper() in df.index:
+    return locations.loc[code.upper()]['Name']
+  else:
+    return code
 
 def is_location_year(trait):
   """
