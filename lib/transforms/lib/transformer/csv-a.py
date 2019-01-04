@@ -37,8 +37,6 @@ def process(args, delimiter = ','):
     # The filenames are used to access the data stored as dataframes,
     # and the identifiers are used to filter the appropriate columns
     # to omit irrelevant data in the output dataframe
-
-
     filenames = set()
     identifiers = set()
     for trait in df.columns[1:]:
