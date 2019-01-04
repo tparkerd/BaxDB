@@ -250,16 +250,17 @@ def read_files(fp, delimiter):
     fp.nextfile()
   return df
 
-def read_data(files, delimiter):
+def read_data(args, delimiter):
   """
   Reads in the data from either STDIN or a list of files
 
   Args:
-    files (FileInput): List of files or STDIN
+    args (Namespace): arguments supplied by user
   
   Result:
     Pandas DataFrame
   """
+  files = args.files
   try:
     fp = fileinput.input(files)
     df = None
