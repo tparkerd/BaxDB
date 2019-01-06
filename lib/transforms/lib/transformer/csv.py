@@ -40,7 +40,7 @@ def process(args, delimiter = ','):
     filenames = set()
     identifiers = set()
     for trait in df.columns[1:]:
-      filename = Convert.trait_to_filenames(trait)
+      filename = Convert.loyr_to_filename(trait)
       filenames.add(filename)
       identity = Convert.trait_to_identifier(trait)
       identifiers.add(identity)

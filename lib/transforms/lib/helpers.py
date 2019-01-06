@@ -47,11 +47,16 @@ class Convert:
       Return True if value is a valid (location, year) pair, False otherwise.
 
     Example cases:
-      FL06 - True
-      FLA10 - False
-      WR10 - True
-      0242 - False
-      FLAG - False
+      >>> is_location_year(FL06)
+      True
+      >>> is_location_year(FLA10)
+      False
+      >>> is_location_year(WR10)
+      True
+      >>> is_location_year(0242)
+      False
+      >>> is_location_year(FLAG)
+      False
 
     """
     # If it's not four characters, it's not a location-year pair
@@ -105,7 +110,7 @@ class Convert:
     return location_code, year
 
   @classmethod
-  def trait_to_filenames(cls, trait):
+  def loyr_to_filename(cls, trait):
     """
     Extract the location and year from a trait
 
