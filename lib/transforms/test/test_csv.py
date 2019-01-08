@@ -11,8 +11,8 @@ def test_csv(args_csv, data_csv):
   src_data = data_csv
   resultant_files = process(args)
 
-  src_processed_count = -1
-  target_processed_count = -1
+  src_processed_count = 0
+  target_processed_count = 0
 
   # Compare each value from source to targets
   # For each row...
