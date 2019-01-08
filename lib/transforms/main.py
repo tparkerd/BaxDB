@@ -1,7 +1,4 @@
-"""
-Data Transformer Script
-
-Takes in 
+"""Data Transformer Script
 
 Common usage:
   python splitLongFormat.py -v input_file
@@ -69,7 +66,10 @@ def process(args):
   except:
     raise 
 
-if __name__=="__main__":
+def parseOptions():
+  """
+  Function to parse user-provided options from terminal
+  """
   parser = argparse.ArgumentParser()
   parser.add_argument('files', metavar='FILE', nargs='*',
                       help='Files to read. If empty, STDIN is used')
@@ -85,5 +85,9 @@ if __name__=="__main__":
   args = parser.parse_args()
   if args.debug is True:
     args.verbose = True
+  
+  return args
 
+if __name__=="__main__":
+  args = parseOptions()
   process(args)
