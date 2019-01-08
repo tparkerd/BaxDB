@@ -1,93 +1,67 @@
-#!/usr/bin/env python3
 """
 Unit tester module for verifying the output of the `splitLongFormat` module
 """
-import fileinput
-import argparse
-import datetime
+import pytest
 from pprint import pprint
-import pandas as pd
-import sys
-import os
+from lib.transformer.csv import process
+from lib.helpers import Convert
 import math
-import re
 
-def contentsMatch(src, target):
-  """
-  For every data point in the target, compare it to the value stored in the source
-  """
-  global args
-  global filecount
-  global valuecount
-  global mismatchcount
+def test_csv(args_csv, data_csv):
+  args = args_csv
+  src_data = data_csv
+  resultant_files = process(args)
 
-  # This may involve dealing with rounding issues
-  tdf = pd.read_csv(target, index_col = 0, float_precision='round_trip')
-  suffix = f'{target[:2]}{target[-6:-4]}'
-  if suffix == 'ravg': # hard-coded out of laziness
-    suffix = 'rankAvg'
+  src_processed_values = 0
+  target_processed_value = 0
 
-  result = True
-
+  # Compare each value from source to targets
   # For each row...
-  for row in list(tdf.index.values):
-    # For each column...
-    for col in list(tdf.columns.values):
-      valuecount = valuecount + 1
-      src_col = f'{col}_{suffix}'
-      tvalue = tdf.at[row, col]
-      svalue = src.at[row, src_col]
-      # If not NANs
-      if math.isnan(svalue) and math.isnan(tvalue):
-        # result = True
-        pass
-      # Floating point value is reasonably close
-      elif math.isclose(svalue, tvalue, rel_tol=1e-20) == True:
-        # result = True
-        pass
+  for row in src_data.itertuples(index = True):
+    for i, col in enumerate(src_data.columns.values):
+      src_processed_values = src_processed_values + 1
+      index_name = row[0]
+
+      # Fetch names and values from source
+      src_col_name = col
+      src_value = row[i + 1]
+
+      # For each value, translate the column as the filename, and use it to
+      # to access the target file's data
+      target_name = Convert.loyr_to_filename(Convert.trait_to_identifier(src_col_name))
+      target_data = resultant_files[target_name]['data']
+
+      # Fetch names and values from target file
+      target_col_name = Convert.trait_to_column(src_col_name)
+      
+      # In case the source value is NAN, we need to make sure that there is not
+      # an entry for the line in the target file. As such, the index for the
+      # line should *not* be in the target file if there was no growout for said
+      # line. However, if the line was part of the growout, but that value was
+      # not measured, the value will be there, and it has to be checked for NAN
+      print(f'{index_name}   <{target_name}>    ({src_col_name} -> {target_col_name})   sv: {src_value}', end = '')
+      if math.isnan(src_value):
+        # Check that index is not in target dataframe
+        if index_name in target_data.index:
+          # Make sure that is is also NAN, otherwise we have an error
+          target_value = target_data.loc[[index_name], [target_col_name]].values[0,0]
+          print(f'   tv: {target_value}')
+          assert math.isnan(target_value)
+        # Source NAN value was omitted from target file
+        # Line was not present in growout (aka, location & year)
+        else:
+          print(f'   [{index_name} not in {target_name}]')
       else:
-        mismatchcount = mismatchcount + 1
-        print(f'Value Mismatch:\n\t\t{src_col}\t{col}')
-        print(f'{row}\t{svalue}\t\t{tvalue}')
-        result = False
+        target_value = target_data.loc[[index_name], [target_col_name]].values[0,0]
+        print(f'   tv: {target_value}')
+        assert math.isclose(src_value, target_value, rel_tol=1e-20)
 
-  return result
+  # Compare each value from targets to source
+  # TODO
 
-def runtests():
-  global args
-  global filecount
-  global valuecount
-  global mismatchcount
-  src = args.files[0]
-  files = sorted(os.listdir(args.directory))
-  # Source dataframe
-  sdf = pd.read_csv(src, index_col=0, float_precision='round_trip')
-
-  os.chdir(args.directory)
-  result = True
-  for file in files:
-    filecount = filecount + 1
-    if contentsMatch(sdf, file) == False:
-      result = False
-  return result
-
-if __name__=="__main__":
-  global args
-  global filecount
-  global valuecount
-  global mismatchcount
-  parser = argparse.ArgumentParser()
-  parser.add_argument('files', metavar='FILE', nargs='*', default = ['in'],
-                      help='files to read, if empty, stdin is used')
-  parser.add_argument("-v", "--verbose", action="store_true",
-                      help="increase output verbosity")
-  parser.add_argument("-d", "--directory", required = True, help="name of output directory")
-  args = parser.parse_args()
-
-  filecount = 0
-  valuecount = 0
-  mismatchcount = 0
-  if runtests() == True:
-    print(f'{valuecount} value(s) were checked in {filecount} file(s).\nNo issues found. All values are correct.')
-  else:
-    print(f'{valuecount} value(s) were checked in {filecount} file(s).\n{mismatchcount} problem(s) were found.')
+  # TODO: data point process between source and target, and asserting that
+  #       the same number of *existing* data points were processed
+  # mismatchcount = mismatchcount + 1
+  # print(f'Value Mismatch:\n\t\t{src_col}\t{col}')
+  # print(f'{row}\t{svalue}\t\t{tvalue}')
+  # result = False
