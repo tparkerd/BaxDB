@@ -22,5 +22,5 @@ def data_csv():
 
 @pytest.fixture(scope='module')
 def args_csv():
-  with patch('sys.argv', ['-v', '--debug', '-t', 'csv', './data/in']):
+  with patch('sys.argv', ['-v', '--debug', '-t', 'csv', './test/data/csv']):
     return po()

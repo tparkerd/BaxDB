@@ -12,14 +12,14 @@ def test_csv(args_csv, data_csv):
   src_data = data_csv
   resultant_files = process(args)
 
-  src_processed_values = 0
-  target_processed_value = 0
+  src_processed_count = -1
+  target_processed_count = -1
 
   # Compare each value from source to targets
   # For each row...
   for row in src_data.itertuples(index = True):
+    # For each column (get index and column name)
     for i, col in enumerate(src_data.columns.values):
-      src_processed_values = src_processed_values + 1
       index_name = row[0]
 
       # Fetch names and values from source
@@ -39,14 +39,15 @@ def test_csv(args_csv, data_csv):
       # line should *not* be in the target file if there was no growout for said
       # line. However, if the line was part of the growout, but that value was
       # not measured, the value will be there, and it has to be checked for NAN
-      print(f'{index_name}   <{target_name}>    ({src_col_name} -> {target_col_name})   sv: {src_value}', end = '')
+      print(f'{index_name}   <{target_name}>   ({src_col_name} -> {target_col_name})   sv: {src_value}', end = '')
       if math.isnan(src_value):
         # Check that index is not in target dataframe
         if index_name in target_data.index:
           # Make sure that is is also NAN, otherwise we have an error
           target_value = target_data.loc[[index_name], [target_col_name]].values[0,0]
           print(f'   tv: {target_value}')
-          assert math.isnan(target_value)
+          src_processed_count = src_processed_count + 1 # Got to a valid comparison, so we can consider it processed
+          assert math.isnan(target_value), f'Source value {target_value} is not considered NAN.'
         # Source NAN value was omitted from target file
         # Line was not present in growout (aka, location & year)
         else:
@@ -54,14 +55,44 @@ def test_csv(args_csv, data_csv):
       else:
         target_value = target_data.loc[[index_name], [target_col_name]].values[0,0]
         print(f'   tv: {target_value}')
-        assert math.isclose(src_value, target_value, rel_tol=1e-20)
+        src_processed_count = src_processed_count + 1 # Got to a valid comparison, so we can consider it processed
+        assert math.isclose(src_value, target_value, rel_tol=1e-20), f'Values {src_value}, {target_value} are not close enough to be considered equal.'
+
+
+  print("\n\n===================================================================== Test 1.1 Complete =====================================================================\n")
 
   # Compare each value from targets to source
-  # TODO
+  # For each target file...
+  for target_file in resultant_files:
+    target_data = resultant_files[target_file]['data']
+    target_name = resultant_files[target_file]['filename'][:-4]
+    # For each row...
+    for row in target_data.itertuples(index = True):
+      # For each column (get index and column name)
+      for i, col in enumerate(target_data.columns.values):
+        index_name = row[0]
 
-  # TODO: data point process between source and target, and asserting that
-  #       the same number of *existing* data points were processed
-  # mismatchcount = mismatchcount + 1
-  # print(f'Value Mismatch:\n\t\t{src_col}\t{col}')
-  # print(f'{row}\t{svalue}\t\t{tvalue}')
-  # result = False
+        # Fetch names and value from target
+        target_col_name = col
+        target_value = row[i + 1]
+
+        # For each value, translate the column name back to the original by
+        # combining with the filename. Use it to access the source dataset
+        src_col_name = Convert.column_to_trait(target_col_name, target_name)
+        src_value = src_data.loc[[index_name], [src_col_name]].values[0,0]
+        print(f'{index_name}   <{target_name}>   ( {target_col_name} -> {src_col_name} )   tv: {target_value}    sv: {src_value}')
+
+        target_processed_count = target_processed_count + 1 # Got to a valid comparison, so we can consider it processed
+        # Check for NANs, otherwise make sure the values are relatively equal
+        if math.isnan(target_value):
+          assert math.isnan(src_value), f'Source value {src_value} is not considered NAN.'
+        else:
+          assert math.isclose(target_value, src_value, rel_tol=1e-20), f'Values {target_value}, {src_value} are not close enough to be considered equal.'
+        
+
+  print("\n\n===================================================================== Test 1.2 Complete =====================================================================\n")
+
+  # Successfully processed from source > targets *and* targets > source
+  # Check that the same number of values were compared
+  difference = src_processed_count - target_processed_count
+  assert src_processed_count == target_processed_count, f'The number of values processed for input files differed by {difference}'

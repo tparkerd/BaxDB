@@ -152,7 +152,7 @@ class Convert:
       trait (String):
 
     Returns (String):
-      Return a new string as the basename (without extension) of a filename
+      Return a new string
 
     Example cases:
       >>> trait_to_identifier('FL06')
@@ -177,15 +177,11 @@ class Convert:
   def trait_to_column(cls, trait):
     """Remove trailing location-year value from trait string.
 
-    TODO(timp): Rename this and refactor `process` methods in transformers
-    so that accurately reflect that it just clips off the trailing
-    location-year pair for CSV format.
-
     Args:
       trait (String):
 
     Returns (String):
-      Return a new string as the basename (without extension) of a filename
+      Return a new string
 
     Example cases:
       >>> trait_to_column('weight_FL06')
@@ -197,6 +193,33 @@ class Convert:
     if result == '': # in case of row label (left-most column label)
       return trait
     return result
+
+  @classmethod
+  def column_to_trait(cls, column_name, filename):
+    """Convert a short column name back into a long format trait
+    Args:
+      column_name (String):
+      filename (String):
+
+    Returns (String):
+      Return a new string
+
+    Example cases:
+      >>> column_to_trait('weight', 'FL_2006')
+      'weight_FL06'
+      >>> column_to_trait('B11_lmResid', 'MO_2006')
+      'B11_lmResid_MO06'
+    """
+    # Check for the type of column name
+    # I.e., does it contain a LOYR pair
+    candidate_loyr = f'{filename[:2]}{filename[-2:]}'
+    if cls.is_location_year(candidate_loyr):
+      return f'{column_name}_{filename[:2]}{filename[-2:]}'
+    else:
+      return f'{column_name}_{filename}'
+
+
+
 
 def read_stdin(fp, delimiter):
   """
