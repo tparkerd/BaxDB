@@ -23,8 +23,7 @@ from ..helpers import Convert, read_data
 
 
 def process(args, delimiter = ','):
-  """
-  Process data
+  """Process data
 
   Args:
     args (Namespace): arguments supplied by user

@@ -27,6 +27,12 @@ class Convert:
       Return full string of value if defined in locations dictionary, otherwise
       returns the original string value.
 
+    Example cases:
+      >>> expand_location_code('FL')
+      'Florida'
+      >>> expand_location_code('PU')
+      'Purdue'
+
     """
     location_fp = 'locations.csv'
     locations = pd.read_csv(location_fp, index_col = 0)
@@ -140,9 +146,7 @@ class Convert:
 
   @classmethod
   def trait_to_identifier(cls, trait):
-    """
-    Strip string of whitespace so that it can be used as an identifier to search
-    the dataset with.
+    """Strip string of whitespace so that it can be used as an identifier to search the dataset with.
 
     Args:
       trait (String):
@@ -151,9 +155,12 @@ class Convert:
       Return a new string as the basename (without extension) of a filename
 
     Example cases:
-      FL06 - FL06
-      WR10\n - WR10
-      PU98\r\n - PU98
+      >>> trait_to_identifier('FL06')
+      'FL06'
+      >>> trait_to_identifier('WR10\n')
+      'WR10'
+      >>> trait_to_identifier('PU98\r\n')
+      'PU98'
     """
     trait_id = trait.split('_')[-1]
 
@@ -168,12 +175,11 @@ class Convert:
 
   @classmethod
   def trait_to_column(cls, trait):
-    """
-    Remove trailing location-year value from trait string.
+    """Remove trailing location-year value from trait string.
 
     TODO(timp): Rename this and refactor `process` methods in transformers
-            so that accurately reflect that it just clips off the trailing
-            location-year pair for CSV format.
+    so that accurately reflect that it just clips off the trailing
+    location-year pair for CSV format.
 
     Args:
       trait (String):
@@ -182,8 +188,10 @@ class Convert:
       Return a new string as the basename (without extension) of a filename
 
     Example cases:
-      weight_FL06 -> weight
-      B11_lmResid_MO06 -> B11_lmResid
+      >>> trait_to_column('weight_FL06')
+      'weight'
+      >>> trait_to_column('B11_lmResid_MO06')
+      'B11_lmResid'
     """
     result = '_'.join(trait.split('_')[:-1])
     if result == '': # in case of row label (left-most column label)
@@ -256,8 +264,7 @@ def read_files(fp, delimiter):
   return df
 
 def read_data(args, delimiter):
-  """
-  Reads in the data from either STDIN or a list of files
+  """Reads in the data from either STDIN or a list of files
 
   Args:
     args (Namespace): arguments supplied by user
