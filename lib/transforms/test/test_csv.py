@@ -1,5 +1,6 @@
 """
 Unit tester module for verifying the output of the `splitLongFormat` module
+Sample name of input file: `5.mergedWeightNorm.LM.rankAvg.longFormat.csv`
 """
 import pytest
 from lib.transformer.csv import process

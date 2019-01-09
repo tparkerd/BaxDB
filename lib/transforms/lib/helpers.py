@@ -91,11 +91,14 @@ class Convert:
       Return True if value is a valid (location, year) pair, False otherwise.
 
     Example cases:
-      FL06 - FL, 2006
-      FLA10 - FL, 2010
-      WR10 - WR, 2010
-      PU98 - PU, 1998
-
+      >>> get_location_year('FL06')
+      ('FL', 2006)
+      >>> get_location_year('FLA10')
+      ('FL', 2010)
+      >>> get_location_year('WR10')
+      ('WR', 2010)
+      >>> get_location_year('PU98')
+      ('PU', 1998)
     """
     # Get the location and year from the last four characters
     location_code = trait[-4:-2]
@@ -127,10 +130,14 @@ class Convert:
       Return a new string as the basename (without extension) of a filename
 
     Example cases:
-      FL06 - FL_2006
-      FLA10 - FL_2010
-      WR10 - WR_2010
-      PU98 - PU_1998
+      >>> loyr_to_filename('FL06')
+      'FL_2006'
+      >>> loyr_to_filename('FL10')
+      'FL_2010'
+      >>> loyr_to_filename('WR10')
+      'WR_2010'
+      >>> loyr_to_filename('PU98')
+      'PU_1998'
     """
     trait_id = trait.split('_')[-1]
 
@@ -143,6 +150,48 @@ class Convert:
       trait_id = trait_id.strip()
 
     return trait_id
+
+  @classmethod
+  def filename_to_loyr(cls, filename):
+    """
+    Convert filename into a location year truncated string
+
+    Args:
+      trait (String):
+
+    Returns (String):
+      Return a new string as the basename (without extension) of a filename
+
+    Example cases:
+      >>> filename_to_loyr('FL_2006')
+      'FL06'
+      >>> filename_to_loyr('FL_2010')
+      'FL10'
+      >>> filename_to_loyr('WR_2010')
+      'WR10'
+      >>> filename_to_loyr('PU_1998')
+      'PU98'
+    """
+
+    # Hardcoded length
+    # NOTE(timp): There may need to be a different way of handling this 
+    #             Consider changing the LOYR references to growouts and then
+    #             generalizing them.
+    if len(filename) != 7:
+      return filename
+    
+    # Check prefix (location) and suffix (year) are valid types
+    try:
+      prefix, suffix = filename.split('_')
+      if not isinstance(prefix, str):
+        raise Exception
+      suffix = int(suffix)
+      suffix = str(suffix)[-2:]
+    except:
+      raise
+
+    # Combine the prefix and suffix, omitting leading two digits of year
+    return f'{prefix}{suffix}'
 
   @classmethod
   def trait_to_identifier(cls, trait):
@@ -217,9 +266,6 @@ class Convert:
       return f'{column_name}_{filename[:2]}{filename[-2:]}'
     else:
       return f'{column_name}_{filename}'
-
-
-
 
 def read_stdin(fp, delimiter):
   """
