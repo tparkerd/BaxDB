@@ -3,7 +3,6 @@ Unit tester module for verifying the output of the CSV-A module
 Sample name of input file: `1.meanByLineandLoc.divpanel.LocSpecificResids.csv`
 """
 import pytest
-from pprint import pprint
 from lib.transformer.csv_a import process
 from lib.helpers import Convert
 import math
@@ -40,27 +39,21 @@ def test_csv_a(args_csv_a, data_csv_a):
       # line should *not* be in the target file if there was no growout for said
       # line. However, if the line was part of the growout, but that value was
       # not measured, the value will be there, and it has to be checked for NAN
-      print(f'{src_processed_count + 1}) {index_name}   <{target_name}>   sv: {src_value}', end = '')
       if math.isnan(src_value):
         # Check that index is not in target dataframe
         if index_name in target_data.index[1:]:
           # Make sure that is is also NAN, otherwise we have an error
           target_value = target_data.loc[[index_name], [col]].values[0,0]
-          print(f'   tv: {target_value}')
           src_processed_count = src_processed_count + 1 # Got to a valid comparison, so we can consider it processed
           assert math.isnan(target_value), f'Source value {target_value} is not considered NAN.'
         # Source NAN value was omitted from target file
         # Line was not present in growout (aka, location & year)
         else:
-          # pass
-          print(f'   [{index_name} not in {target_name}]')
+          pass
       else:
         target_value = target_data.loc[[index_name], [col]].values[0,0]
-        print(f'   tv: {target_value}')
         src_processed_count = src_processed_count + 1 # Got to a valid comparison, so we can consider it processed
         assert math.isclose(src_value, target_value, rel_tol=1e-20), f'Values {src_value}, {target_value} are not close enough to be considered equal. (i: {index_name}, fp: {target_name}, col: {col})'
-
-  print("\n\n===================================================================== Test 1.1 Complete =====================================================================\n")
 
   # Compare each value from targets to source
   # For each target file...
@@ -81,9 +74,7 @@ def test_csv_a(args_csv_a, data_csv_a):
 
         # converted = src_data.loc[[index_name],['loc']].values[0,0]
         filtered_src_data = src_data[src_data['loc'] == Convert.filename_to_loyr(target_name)]
-        # pprint(filtered_src_data)
         src_value = filtered_src_data.loc[[index_name], [col]].values[0,0]
-        print(f'{target_processed_count + 1}) {index_name}   <{target_name}>   {col}   tv: {target_value}    sv: {src_value}')
 
         target_processed_count = target_processed_count + 1 # Got to a valid comparison, so we can consider it processed
         # Check for NANs, otherwise make sure the values are relatively equal
@@ -92,9 +83,6 @@ def test_csv_a(args_csv_a, data_csv_a):
         else:
           assert math.isclose(target_value, src_value, rel_tol=1e-20), f'Values {target_value}, {src_value} are not close enough to be considered equal. (i: {index_name}, fp: {target_name}, col: {col})'
         
-
-  # print("\n\n===================================================================== Test 1.2 Complete =====================================================================\n")
-
   # Successfully processed from source > targets *and* targets > source
   # Check that the same number of values were compared
   difference = src_processed_count - target_processed_count
